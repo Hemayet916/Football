@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Match Viewer | Soccer Central</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>⚽ Soccer Match Viewer</h1>
+    <nav>
+      <a href="#">Home</a>
+      <a href="#stats">Top Players</a>
+      <a href="#highlights">Highlights</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="liveMatch">
+      <h2>Live Match</h2>
+      <div id="matchInfo">
+        <h3 id="matchType">Friendly Match</h3>
+        <div id="teamNames">
+          <span class="team team1">Team Alpha</span>
+          <span>vs</span>
+          <span class="team team2">Team Omega</span>
+        </div>
+        <div id="liveTimer">00:00</div>
+        <div id="formationSVG"></div>
+      </div>
+    </section>
+
+    <section id="highlights">
+      <h2>Live Highlights</h2>
+      <ul id="highlightList"></ul>
+    </section>
+
+    <section id="stats">
+      <h2>Top Player Stats</h2>
+      <div class="leaderboards">
+        <div class="board">
+          <h3>🏆 Most Goals</h3>
+          <ul id="goalsList"></ul>
+        </div>
+        <div class="board">
+          <h3>🎯 Most Assists</h3>
+          <ul id="assistsList"></ul>
+        </div>
+        <div class="board">
+          <h3>🛡️ Most Saves</h3>
+          <ul id="savesList"></ul>
+        </div>
+        <div class="board">
+          <h3>👟 Most Appearances</h3>
+          <ul id="appearanceList"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Soccer Central Viewer</p>
+  </footer>
+
+  <script src="viewer.js"></script>
+</body>
+</html>
