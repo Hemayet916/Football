@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Football Tournament</title>
+  <style>
+    /* --- Theme --- */
+    :root{
+      --bg1: #0f1724; /* deep indigo */
+      --grad1: #0f1724;
+      --grad2: #3b0764; /* purple */
+      --accent: #a78bfa; /* light purple */
+      --card: rgba(0,0,0,0.45);
+      --muted: #9ca3af;
+      --glass: rgba(255,255,255,0.02);
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(135deg, #0b1220 0%, #2a0745 45%, #000000 100%);
+      color:#e6e6ee;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:28px;
+      box-sizing:border-box;
+    }
+    .container{max-width:1200px;margin:0 auto}
+    h1{font-size:32px;margin:0 0 6px;text-align:center;color:var(--accent);text-shadow:0 6px 20px rgba(167,139,250,0.12)}
+    p.lead{text-align:center;color:var(--muted);margin:0 0 18px}
+    .grid{display:grid;grid-gap:18px}
+    .cols-3{grid-template-columns:1fr 380px}
+    @media(max-width:980px){ .cols-3{grid-template-columns:1fr} }
+
+    /* Cards */
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(167,139,250,0.08);
+      padding:14px;border-radius:14px;
+      box-shadow: 0 8px 30px rgba(10,8,15,0.6);
+      backdrop-filter: blur(6px);
+    }
+    .section-title{font-weight:600;color:#e9e5ff;margin-bottom:10px}
+
+    /* Match list */
+    .date-block{border-radius:10px;padding:10px;border:1px solid rgba(167,139,250,0.05);background:rgba(0,0,0,0.25)}
+    .match-row{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:8px;background:rgba(0,0,0,0.35);gap:12px}
+    .teams{display:flex;align-items:center;gap:10px}
+    .team-logo{width:44px;height:44px;border-radius:50%;background:#111;display:inline-block;overflow:hidden;flex-shrink:0}
+    .team-logo img{width:100%;height:100%;object-fit:cover}
+    .muted{color:var(--muted);font-size:13px}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;font-size:13px;color:var(--accent)}
+
+    /* roster / players */
+    .controls{display:flex;gap:8px;align-items:center}
+    .input, .select, .btn{
+      background:transparent;border:1px solid rgba(167,139,250,0.06);padding:8px 10px;border-radius:8px;color:inherit;
+    }
+    .btn{cursor:pointer}
+    .player-card{display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;background:rgba(0,0,0,0.28);border:1px solid rgba(167,139,250,0.04)}
+    .player-photo{width:48px;height:48px;border-radius:50%;overflow:hidden}
+    .player-photo img{width:100%;height:100%;object-fit:cover}
+
+    /* leaderboards */
+    .leader-row{display:flex;align-items:center;justify-content:space-between;padding:8px 6px;border-radius:6px}
+    .leader-left{display:flex;align-items:center;gap:8px}
+    .small{font-size:13px;color:var(--muted)}
+
+    footer{margin-top:22px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* buttons group */
+    .btn-group{display:flex;gap:6px}
+    .chip{padding:6px 10px;border-radius:999px;border:1px solid rgba(167,139,250,0.06);background:transparent;color:var(--muted);cursor:pointer}
+    .chip.active{background:rgba(167,139,250,0.08);color:var(--accent);border-color:rgba(167,139,250,0.12)}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tournament Dashboard</h1>
+    <p class="lead">Manage matches, rosters, stats and leaderboards</p>
+
+    <div class="grid cols-3">
+      <!-- left: large column -->
+      <div>
+        <!-- Match Calendar -->
+        <div class="card" id="calendarCard">
+          <div class="section-title">Match Calendar</div>
+          <div id="matchesContainer"></div>
+        </div>
+
+        <!-- Player & Team Stats -->
+        <div class="card" style="margin-top:16px">
+          <div class="section-title">Player & Team Stats</div>
+
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+            <input id="playerSearch" class="input" placeholder="Search player by name..." style="flex:1" />
+            <select id="sortField" class="select">
+              <option value="name">Name</option>
+              <option value="age">Age</option>
+              <option value="ovr">OVR</option>
+            </select>
+            <button id="sortDir" class="btn">Asc</button>
+            <select id="teamSelect" class="select" style="min-width:140px"></select>
+          </div>
+
+          <div id="playersGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px"></div>
+        </div>
+      </div>
+
+      <!-- right: sidebar -->
+      <aside>
+        <!-- Team Leaderboard -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="section-title">Team Leaderboard</div>
+          <div id="teamLeaderboard"></div>
+        </div>
+
+        <!-- Player Leaderboards -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="section-title">Player Leaderboards</div>
+            <div class="small">Category</div>
+          </div>
+
+          <div style="margin:10px 0" class="btn-group">
+            <div class="chip active" data-cat="topScorers">Top Scorers</div>
+            <div class="chip" data-cat="assists">Assists</div>
+            <div class="chip" data-cat="saves">Saves</div>
+          </div>
+
+          <div id="playerLeaderboard" style="margin-top:8px"></div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>Built with sample data to connect a backend.</footer>
+  </div>
+
+  <script>
+    /* ---------- Sample data (same as current app) ---------- */
+    const SAMPLE_TEAMS = [
+      {
+        id: "t1", name: "Red Falcons",
+        logo: "https://via.placeholder.com/80x80.png?text=RF",
+        grade: "A",
+        players: [
+          { id: "p1", name: "Ali Ahmed", age: 24, grade: "A", ovr: 86, goals: 5, assists: 2, saves: 0, photo: "https://i.pravatar.cc/80?img=1" },
+          { id: "p2", name: "Samir Khan", age: 21, grade: "B", ovr: 78, goals: 1, assists: 3, saves: 0, photo: "https://i.pravatar.cc/80?img=2" },
+        ],
+        stats: { played: 3, goalsFor: 8, goalsAgainst: 3 },
+      },
+      {
+        id: "t2", name: "Blue Comets",
+        logo: "https://via.placeholder.com/80x80.png?text=BC",
+        grade: "B",
+        players: [
+          { id: "p3", name: "Omar Farooq", age: 28, grade: "A", ovr: 90, goals: 7, assists: 1, saves: 0, photo: "https://i.pravatar.cc/80?img=3" },
+          { id: "p4", name: "Rizwan Ali", age: 19, grade: "C", ovr: 70, goals: 0, assists: 0, saves: 5, photo: "https://i.pravatar.cc/80?img=4" },
+        ],
+        stats: { played: 3, goalsFor: 9, goalsAgainst: 2 },
+      },
+      {
+        id: "t3", name: "Green Tigers",
+        logo: "https://via.placeholder.com/80x80.png?text=GT",
+        grade: "A",
+        players: [
+          { id: "p5", name: "Imran Siddique", age: 22, grade: "A", ovr: 82, goals: 3, assists: 4, saves: 0, photo: "https://i.pravatar.cc/80?img=5" },
+        ],
+        stats: { played: 3, goalsFor: 2, goalsAgainst: 7 },
+      },
+    ];
+
+    const SAMPLE_MATCHES = [
+      { id: "m1", date: "2025-09-15", time: "18:00", venue: "Main Stadium", teamA: "t1", teamB: "t2", score: null },
+      { id: "m2", date: "2025-09-16", time: "16:00", venue: "City Arena", teamA: "t2", teamB: "t3", score: { a: 3, b: 1 } },
+      { id: "m3", date: "2025-09-18", time: "19:00", venue: "Main Stadium", teamA: "t1", teamB: "t3", score: null },
+    ];
+
+    /* ---------- Helpers ---------- */
+    const getTeamById = (id) => SAMPLE_TEAMS.find(t => t.id === id) || null;
+
+    function formatDateISO(d) {
+      try { return new Date(d).toDateString(); } catch(e) { return d; }
+    }
+
+    /* ---------- Rendering ---------- */
+    const matchesContainer = document.getElementById('matchesContainer');
+    const playersGrid = document.getElementById('playersGrid');
+    const teamSelect = document.getElementById('teamSelect');
+    const teamLeaderboardDiv = document.getElementById('teamLeaderboard');
+    const playerLeaderboardDiv = document.getElementById('playerLeaderboard');
+    const searchInput = document.getElementById('playerSearch');
+    const sortField = document.getElementById('sortField');
+    const sortDirBtn = document.getElementById('sortDir');
+    const chips = Array.from(document.querySelectorAll('.chip'));
+
+    let state = {
+      teams: SAMPLE_TEAMS,
+      matches: SAMPLE_MATCHES,
+      selectedTeamId: SAMPLE_TEAMS[0]?.id || null,
+      playerQuery: '',
+      sort: { field: 'name', dir: 'asc' },
+      playerCategory: 'topScorers'
+    };
+
+    function groupMatchesByDate(matches) {
+      const map = {};
+      matches.forEach(m => {
+        map[m.date] = map[m.date] || [];
+        map[m.date].push(m);
+      });
+      return map;
+    }
+
+    function renderMatches() {
+      const grouped = groupMatchesByDate(state.matches);
+      const dates = Object.keys(grouped).sort();
+      matchesContainer.innerHTML = dates.map(date=>{
+        const dayMatches = grouped[date];
+        return `
+          <div class="date-block" style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <div>
+                <div class="muted">${formatDateISO(date)}</div>
+                <div style="font-weight:600;color:var(--accent)">${date}</div>
+              </div>
+              <div class="muted">${dayMatches.length} match(es)</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px">
+              ${dayMatches.map(m => {
+                const teamA = getTeamById(m.teamA);
+                const teamB = getTeamById(m.teamB);
+                const scoreText = m.score ? `${m.score.a} - ${m.score.b}` : 'TBD';
+                return `
+                  <div class="match-row">
+                    <div class="teams">
+                      <div class="team-logo"><img src="${teamA?.logo}" alt="${teamA?.name}"></div>
+                      <div style="font-weight:600">${teamA?.name}</div>
+                      <div class="muted" style="margin:0 8px">vs</div>
+                      <div class="team-logo"><img src="${teamB?.logo}" alt="${teamB?.name}"></div>
+                      <div style="font-weight:600">${teamB?.name}</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div class="small">${m.time}</div>
+                      <div class="muted">${m.venue}</div>
+                      <div class="mono" style="margin-top:6px">${scoreText}</div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+      if(dates.length===0) matchesContainer.innerHTML = '<div class="muted">No matches scheduled</div>';
+    }
+
+    function renderTeamOptions() {
+      teamSelect.innerHTML = state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+      teamSelect.value = state.selectedTeamId;
+    }
+
+    function getSelectedTeam() {
+      return getTeamById(state.selectedTeamId);
+    }
+
+    function renderPlayers() {
+      const team = getSelectedTeam();
+      if(!team) {
+        playersGrid.innerHTML = '<div class="muted">Select a team</div>';
+        return;
+      }
+      let list = [...team.players];
+      const q = state.playerQuery.trim().toLowerCase();
+      if(q) list = list.filter(p => p.name.toLowerCase().includes(q));
+
+      const dir = state.sort.dir === 'asc' ? 1 : -1;
+      if(state.sort.field === 'name') list.sort((a,b)=>a.name.localeCompare(b.name)*dir);
+      if(state.sort.field === 'age') list.sort((a,b)=> (a.age - b.age)*dir);
+      if(state.sort.field === 'ovr') list.sort((a,b)=> (a.ovr - b.ovr)*dir);
+
+      playersGrid.innerHTML = list.map(p=>`
+        <div class="player-card">
+          <div class="player-photo"><img src="${p.photo}" alt="${p.name}"/></div>
+          <div style="flex:1">
+            <div style="font-weight:700;color:var(--accent)">${p.name}</div>
+            <div class="small">Age: ${p.age} • Grade: ${p.grade}</div>
+            <div class="muted" style="font-size:12px">OVR: ${p.ovr} • G:${p.goals} A:${p.assists} S:${p.saves}</div>
+          </div>
+        </div>
+      `).join('');
+      if(list.length===0) playersGrid.innerHTML = '<div class="muted">No players found</div>';
+    }
+
+    function computeTeamLeaderboard() {
+      const list = state.teams.map(t => ({
+        id: t.id,
+        name: t.name,
+        logo: t.logo,
+        played: t.stats.played,
+        goalsFor: t.stats.goalsFor,
+        goalsAgainst: t.stats.goalsAgainst,
+        goalDiff: t.stats.goalsFor - t.stats.goalsAgainst
+      }));
+      list.sort((a,b)=> b.goalDiff - a.goalDiff || b.goalsFor - a.goalsFor);
+      return list.map((t,i)=>({ ...t, position: i+1 }));
+    }
+
+    function renderTeamLeaderboard() {
+      const list = computeTeamLeaderboard();
+      teamLeaderboardDiv.innerHTML = list.map(t=>`
+        <div class="leader-row">
+          <div class="leader-left">
+            <div style="font-weight:700;color:var(--accent)">#${t.position}</div>
+            <div class="team-logo" style="width:38px;height:38px"><img src="${t.logo}" alt="${t.name}"></div>
+            <div>
+              <div style="font-weight:600">${t.name}</div>
+              <div class="small">Played: ${t.played}</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="small">GF: ${t.goalsFor}</div>
+            <div class="small">GA: ${t.goalsAgainst}</div>
+            <div class="small">GD: ${t.goalDiff}</div>
+          </div>
+        </div>
+      `).join('');
+      if(list.length===0) teamLeaderboardDiv.innerHTML = '<div class="muted">No teams</div>';
+    }
+
+    function computePlayerLeaderboard(category) {
+      const all = state.teams.flatMap(t => t.players.map(p => ({ ...p, teamId: t.id, teamLogo: t.logo })));
+      if(category === 'topScorers') return all.sort((a,b)=> b.goals - a.goals);
+      if(category === 'assists') return all.sort((a,b)=> b.assists - a.assists);
+      if(category === 'saves') return all.sort((a,b)=> b.saves - a.saves);
+      return all;
+    }
+
+    function renderPlayerLeaderboard() {
+      const list = computePlayerLeaderboard(state.playerCategory).slice(0, 10);
+      playerLeaderboardDiv.innerHTML = list.map((p,i)=>`
+        <div class="leader-row">
+          <div class="leader-left">
+            <div style="font-weight:700;color:var(--accent)">#${i+1}</div>
+            <div class="team-logo" style="width:32px;height:32px"><img src="${p.teamLogo}" alt=""></div>
+            <div>
+              <div style="font-weight:600">${p.name}</div>
+              <div class="small">Team: ${getTeamById(p.teamId)?.name || '-'}</div>
+            </div>
+          </div>
+          <div class="small">
+            ${state.playerCategory === 'topScorers' ? `G: ${p.goals}` : state.playerCategory === 'assists' ? `A: ${p.assists}` : `S: ${p.saves}`}
+          </div>
+        </div>
+      `).join('');
+      if(list.length===0) playerLeaderboardDiv.innerHTML = '<div class="muted">No players</div>';
+    }
+
+    /* ---------- Wiring ---------- */
+    function refreshAll() {
+      renderMatches();
+      renderTeamOptions();
+      renderPlayers();
+      renderTeamLeaderboard();
+      renderPlayerLeaderboard();
+    }
+
+    // inputs
+    searchInput.addEventListener('input', (e)=> {
+      state.playerQuery = e.target.value;
+      renderPlayers();
+    });
+    sortField.addEventListener('change', (e) => {
+      state.sort.field = e.target.value;
+      renderPlayers();
+    });
+    sortDirBtn.addEventListener('click', ()=> {
+      state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
+      sortDirBtn.textContent = state.sort.dir === 'asc' ? 'Asc' : 'Desc';
+      renderPlayers();
+    });
+
+    teamSelect.addEventListener('change', (e)=> {
+      state.selectedTeamId = e.target.value;
+      renderPlayers();
+    });
+
+    // chips for player leaderboard
+    chips.forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        chips.forEach(c=>c.classList.remove('active'));
+        chip.classList.add('active');
+        state.playerCategory = chip.dataset.cat;
+        renderPlayerLeaderboard();
+      });
+    });
+
+    // init
+    refreshAll();
+  </script>
+</body>
+</html>
